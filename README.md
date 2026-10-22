@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo-512.png" width="280" height="280" alt="Equali" />
+</p>
+
 # Equali · extensión de Chrome
 
 Ecualizador de 10 bandas en tiempo real para **cualquier pestaña de Chrome** con audio:
