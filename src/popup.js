@@ -751,7 +751,7 @@ window.addEventListener('blur', abEnd);
 
 els.exportBtn.addEventListener('click', () => {
   const payload = {
-    app: 'equalizer-pro',
+    app: 'equali',
     version: 1,
     exportedAt: new Date().toISOString(),
     customPresets: settings.customPresets,
@@ -761,7 +761,7 @@ els.exportBtn.addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'equalizer-pro-presets.json';
+  link.download = 'equali-presets.json';
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
   toast('Presets exportados');

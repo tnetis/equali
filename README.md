@@ -1,13 +1,15 @@
-# Equalizer Pro · extensión de Chrome
+# Equali · extensión de Chrome
 
 Ecualizador de 10 bandas en tiempo real para **cualquier pestaña de Chrome** con audio:
 YouTube, Twitch, Spotify web, Netflix (limitado por DRM), radios online, etc.
 
 Manifest V3, sin dependencias en runtime, sin permisos de red y sin telemetría.
 
-![bandas](https://img.shields.io/badge/bandas-10-dda14f) ![presets](https://img.shields.io/badge/presets-39-8d939a) ![mv3](https://img.shields.io/badge/manifest-v3-6ea580)
+[Repositorio](https://github.com/tnetis/equali) · [Privacidad](PRIVACY.md) · [Licencia](LICENSE)
 
-![Interfaz de Equalizer Pro](preview.png)
+![bandas](https://img.shields.io/badge/bandas-10-dda14f) ![presets](https://img.shields.io/badge/presets-39-8d939a) ![mv3](https://img.shields.io/badge/manifest-v3-6ea580) ![license](https://img.shields.io/badge/license-MIT-dda14f)
+
+![Interfaz de Equali](preview.png)
 
 ## Funciones
 
@@ -58,8 +60,8 @@ Solo se necesita Node 20+. No hay toolchain nativa.
 1. Instala Node 20 y las dependencias (`esbuild`, binario precompilado).
 2. Ejecuta `npm run build`.
 3. Valida el manifiesto y que existan iconos, service worker y offscreen.
-4. Genera `equalizer-pro-<ref>.zip` y sube dos artefactos:
-   `equalizer-pro-unpacked` (carpeta) y `equalizer-pro-zip`.
+4. Genera `equali-<ref>.zip` y sube dos artefactos:
+   `equali-unpacked` (carpeta) y `equali-zip`.
 5. Si el push es un tag `v*`, publica un **Release** con el zip adjunto.
 
 Para publicar una versión:
@@ -88,6 +90,8 @@ reproduce por el `AudioContext`, porque Chrome **mueve** el audio al capturarlo.
 los tres módulos cargan y que la UI responde sin abrir Chrome con la extensión.
 `tools/preview.html` hace lo mismo pero sin los estilos de prueba, para revisar el
 aspecto real del popup (de ahí sale `preview.png`).
+
+La marca está en `assets/logo.svg`; los PNG de `src/icons/` se generan desde ahí.
 
 ```bash
 npx serve .          # o cualquier servidor estático en la raíz
@@ -144,3 +148,8 @@ desde ahí. La extensión no puede proteger un volumen que ya viene saturado.
 
 No hay llamadas de red, ni analítica, ni cuentas. Los ajustes viven en
 `chrome.storage.local` y el audio se procesa en memoria, nunca se graba.
+Política completa: [PRIVACY.md](PRIVACY.md).
+
+## Licencia
+
+MIT © 2026 Equali contributors. Ver [LICENSE](LICENSE).

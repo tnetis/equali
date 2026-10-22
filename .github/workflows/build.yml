@@ -46,20 +46,20 @@ jobs:
       - name: Package zip
         run: |
           cd dist
-          zip -r "../equalizer-pro-${GITHUB_REF_NAME:-dev}.zip" . -x '*.DS_Store'
+          zip -r "../equali-${GITHUB_REF_NAME:-dev}.zip" . -x '*.DS_Store'
 
       - name: Upload unpacked artifact
         uses: actions/upload-artifact@v4
         with:
-          name: equalizer-pro-unpacked
+          name: equali-unpacked
           path: dist/**
           if-no-files-found: error
 
       - name: Upload zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: equalizer-pro-zip
-          path: equalizer-pro-*.zip
+          name: equali-zip
+          path: equali-*.zip
           if-no-files-found: error
 
   release:
@@ -74,7 +74,7 @@ jobs:
       - name: Download zip
         uses: actions/download-artifact@v4
         with:
-          name: equalizer-pro-zip
+          name: equali-zip
           path: release
 
       - name: List files
@@ -83,5 +83,5 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/equalizer-pro-*.zip
+          files: release/equali-*.zip
           generate_release_notes: true

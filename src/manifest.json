@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Equalizer Pro",
+  "name": "Equali",
   "version": "1.0.0",
   "description": "Ecualizador de 10 bandas con 39 presets, preamplificador y protección de salida para YouTube y cualquier pestaña con audio.",
   "minimum_chrome_version": "116",
   "permissions": ["tabCapture", "offscreen", "storage", "activeTab"],
   "action": {
-    "default_title": "Equalizer Pro",
+    "default_title": "Equali",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

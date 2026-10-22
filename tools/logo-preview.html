@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Equali · logo</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #0b0c0e;
+        color: #aab0b7;
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1, h2 { color: #e8eaed; font-weight: 600; letter-spacing: -0.01em; }
+      h1 { margin: 0 0 4px; font-size: 20px; }
+      h1 small { color: #8d939a; font-weight: 400; font-size: 13px; margin-left: 8px; }
+      h2 { margin: 30px 0 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #8d939a; }
+      p { margin: 0; color: #8d939a; }
+      .row { display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; }
+      .card {
+        display: flex; align-items: center; justify-content: center;
+        padding: 28px; border-radius: 14px;
+        background: #15171a; border: 1px solid #262a30;
+      }
+      .card.light { background: #f3f4f5; border-color: #dfe2e5; }
+      .sizes { display: flex; align-items: flex-end; gap: 28px; padding: 20px 24px; background: #15171a; border: 1px solid #262a30; border-radius: 14px; }
+      .sizes figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .sizes figcaption { font-size: 10px; color: #8d939a; letter-spacing: 0.08em; }
+      .toolbars { display: grid; gap: 10px; }
+      .toolbar { display: flex; align-items: center; gap: 18px; padding: 8px 14px; border-radius: 10px; }
+      .toolbar.light { background: #f1f3f4; }
+      .toolbar.dark { background: #202124; }
+      .toolbar span { font-size: 11px; color: #9aa0a6; }
+      .brand { display: flex; align-items: center; gap: 9px; color: #e8eaed; font-size: 14px; font-weight: 600; }
+      .brand img { border-radius: 5px; }
+      .note { margin-top: 10px; font-size: 11px; color: #757b82; }
+    </style>
+  </head>
+  <body>
+    <h1>Equali <small>bacteria + bandas</small></h1>
+    <p>Marca para Chrome Web Store, barra de herramientas y cabecera del popup.</p>
+
+    <div class="row" style="margin-top: 22px">
+      <div class="card"><img src="../assets/logo.svg" width="256" height="256" alt="Equali" /></div>
+      <div class="card light"><img src="../assets/logo.svg" width="160" height="160" alt="Equali" /></div>
+    </div>
+
+    <h2>Tamaños reales</h2>
+    <div class="sizes">
+      <figure><img src="../assets/logo.svg" width="128" height="128" alt="" /><figcaption>128 px</figcaption></figure>
+      <figure><img src="../assets/logo.svg" width="48" height="48" alt="" /><figcaption>48 px</figcaption></figure>
+      <figure><img src="../assets/logo.svg" width="32" height="32" alt="" /><figcaption>32 px</figcaption></figure>
+      <figure><img src="../assets/logo-16.svg" width="16" height="16" alt="" /><figcaption>16 px</figcaption></figure>
+      <figure><img src="../assets/logo.svg" width="16" height="16" alt="" /><figcaption>16 px (full)</figcaption></figure>
+    </div>
+
+    <h2>Barra de herramientas</h2>
+    <div class="toolbars">
+      <div class="toolbar light">
+        <img src="../assets/logo-16.svg" width="16" height="16" alt="" />
+        <img src="../assets/logo.svg" width="16" height="16" alt="" />
+        <span>claro · simplificado / detallado</span>
+      </div>
+      <div class="toolbar dark">
+        <img src="../assets/logo-16.svg" width="16" height="16" alt="" />
+        <img src="../assets/logo.svg" width="16" height="16" alt="" />
+        <span>oscuro · simplificado / detallado</span>
+      </div>
+    </div>
+
+    <h2>Cabecera del popup</h2>
+    <div class="brand"><img src="../assets/logo.svg" width="24" height="24" alt="" /> Equali</div>
+    <p class="note">El icono de 16 px usa una variante simplificada; el resto usa el detallado.</p>
+  </body>
+</html>

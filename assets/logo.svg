@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Equali">
+  <rect width="128" height="128" rx="28" fill="#111214"/>
+  <rect x="0.5" y="0.5" width="127" height="127" rx="27.5" fill="none" stroke="#2a2e34"/>
+
+  <g transform="translate(64 64) rotate(-20)">
+    <!-- pili -->
+    <g stroke="#dda14f" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round">
+      <path d="M-20 -13 V-19"/>
+      <path d="M-6 -13 V-20"/>
+      <path d="M8 13 V20"/>
+      <path d="M20 -13 V-19"/>
+    </g>
+
+    <!-- flagella -->
+    <g fill="none" stroke="#dda14f" stroke-width="4.5" stroke-linecap="round">
+      <path d="M30 -3 C 40 -16, 46 6, 53 -4"/>
+      <path d="M29 6 C 38 18, 45 -2, 52 8"/>
+      <path d="M-30 -4 C -39 -15, -45 4, -52 -5" stroke-opacity="0.85"/>
+    </g>
+
+    <!-- body -->
+    <rect x="-31" y="-13" width="62" height="26" rx="13" fill="#dda14f"/>
+
+    <!-- eq bands as negative space -->
+    <g fill="#111214">
+      <rect x="-14" y="-2" width="4.5" height="14" rx="2.25"/>
+      <rect x="-3.5" y="-11" width="4.5" height="22" rx="2.25"/>
+      <rect x="7" y="-6" width="4.5" height="18" rx="2.25"/>
+    </g>
+  </g>
+</svg>
