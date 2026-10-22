@@ -13,7 +13,9 @@ Manifest V3, sin dependencias en runtime, sin permisos de red y sin telemetría.
 
 ![bandas](https://img.shields.io/badge/bandas-10-dda14f) ![presets](https://img.shields.io/badge/presets-39-8d939a) ![mv3](https://img.shields.io/badge/manifest-v3-6ea580) ![license](https://img.shields.io/badge/license-MIT-dda14f)
 
-![Interfaz de Equali](preview.png)
+<p align="center">
+  <img src="assets/equali-preview.png" width="392" alt="Interfaz de Equali" />
+</p>
 
 ## Funciones
 
@@ -93,7 +95,7 @@ reproduce por el `AudioContext`, porque Chrome **mueve** el audio al capturarlo.
 `tools/harness.html` monta el popup con un `chrome.*` simulado para comprobar que
 los tres módulos cargan y que la UI responde sin abrir Chrome con la extensión.
 `tools/preview.html` hace lo mismo pero sin los estilos de prueba, para revisar el
-aspecto real del popup (de ahí sale `preview.png`).
+aspecto real del popup (de ahí sale `assets/equali-preview.png`).
 
 La marca está en `assets/logo.svg`; los PNG de `src/icons/` se generan desde ahí.
 
