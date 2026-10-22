@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Equalizer Pro</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </span>
+        <div class="titles">
+          <h1>Equalizer <span>Pro</span></h1>
+          <p id="status" class="status">Sin capturar</p>
+        </div>
+      </div>
+
+      <button
+        id="power"
+        class="power"
+        type="button"
+        role="switch"
+        aria-checked="true"
+        aria-label="Activar ecualizador"
+        title="Activar / desactivar el ecualizador"
+      >
+        <span class="knob"></span>
+      </button>
+    </header>
+
+    <section class="capture">
+      <button id="captureBtn" class="primary" type="button">Activar en esta pestaña</button>
+      <p id="captureHint" class="hint">
+        Captura el audio de la pestaña activa: YouTube, Twitch, Spotify web o cualquier página con
+        sonido.
+      </p>
+    </section>
+
+    <section class="curveWrap">
+      <div class="scale" aria-hidden="true">
+        <span>+12</span><span>+6</span><span>0</span><span>−6</span><span>−12</span>
+      </div>
+      <canvas
+        id="curve"
+        width="692"
+        height="168"
+        tabindex="0"
+        aria-label="Curva del ecualizador. Usa las flechas para ajustar la banda seleccionada."
+      ></canvas>
+    </section>
+
+    <section id="bands" class="bands" aria-label="Bandas del ecualizador"></section>
+
+    <section class="presets">
+      <span class="micro">Preset</span>
+      <select id="presetSelect"></select>
+      <button id="savePreset" class="textBtn" type="button" title="Guardar como preset">
+        Guardar
+      </button>
+      <button id="deletePreset" class="tool" type="button" title="Eliminar preset propio" aria-label="Eliminar preset">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3.2 4.2h9.6M6.4 4.2V3h3.2v1.2M4.6 4.2l.5 8.6h5.8l.5-8.6" />
+        </svg>
+      </button>
+    </section>
+
+    <section class="preamp">
+      <div class="row between">
+        <label for="preamp" class="micro">Preamplificador</label>
+        <output id="preampOut">0.0 dB</output>
+      </div>
+      <input id="preamp" type="range" min="-12" max="12" step="0.5" value="0" />
+      <label class="check">
+        <input id="limiter" type="checkbox" checked />
+        <span>Compresor · salida protegida a −1 dB (fija)</span>
+      </label>
+    </section>
+
+    <footer class="footer">
+      <div class="toolbar">
+        <button
+          id="abBtn"
+          class="ab"
+          type="button"
+          title="Mantén pulsado para escuchar el audio original (A/B)"
+        >
+          A/B
+        </button>
+
+        <span class="sep" aria-hidden="true"></span>
+
+        <button id="undoBtn" class="tool" type="button" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 3.4 3 6.4l3 3" />
+            <path d="M3 6.4h6.4a3.4 3.4 0 0 1 0 6.8H7.4" />
+          </svg>
+        </button>
+        <button id="redoBtn" class="tool" type="button" title="Rehacer (Ctrl+Shift+Z)" aria-label="Rehacer">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M10 3.4l3 3-3 3" />
+            <path d="M13 6.4H6.6a3.4 3.4 0 0 0 0 6.8H8.6" />
+          </svg>
+        </button>
+        <button id="reset" class="textBtn" type="button">Restablecer</button>
+
+        <span class="spacer"></span>
+
+        <button id="exportBtn" class="tool" type="button" title="Exportar presets a JSON" aria-label="Exportar presets">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 2.4v6.8" />
+            <path d="M5.2 6.4 8 9.2l2.8-2.8" />
+            <path d="M3 11.6h10" />
+          </svg>
+        </button>
+        <button id="importBtn" class="tool" type="button" title="Importar presets desde JSON" aria-label="Importar presets">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 9.4V2.6" />
+            <path d="M5.2 5.4 8 2.6l2.8 2.8" />
+            <path d="M3 11.6h10" />
+          </svg>
+        </button>
+      </div>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="saveDialog" class="dialog" hidden>
+      <div class="dialogPanel" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+        <h2 id="saveTitle">Guardar preset</h2>
+        <label for="presetName">Nombre</label>
+        <input id="presetName" type="text" maxlength="40" placeholder="Mi preset" />
+        <div class="row end">
+          <button id="cancelSave" class="textBtn" type="button">Cancelar</button>
+          <button id="confirmSave" class="primary small" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <input id="importFile" type="file" accept="application/json,.json" hidden />
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

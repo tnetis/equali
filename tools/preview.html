@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>preview</title>
+    <link rel="stylesheet" href="/src/popup.css" />
+  </head>
+  <body>
+    <script>
+      const noop = () => {};
+      window.chrome = {
+        runtime: {
+          sendMessage: async (message) => {
+            if (message && message.type === 'GET_STATUS') return { active: false, tabId: null };
+            return { ok: true };
+          },
+          connect: () => ({
+            onMessage: { addListener: noop },
+            onDisconnect: { addListener: noop },
+            postMessage: noop
+          }),
+          onMessage: { addListener: noop },
+          onConnect: { addListener: noop },
+          onStartup: { addListener: noop },
+          onInstalled: { addListener: noop }
+        },
+        storage: {
+          local: { get: async () => ({}), set: async () => {} },
+          session: { get: async () => ({}), set: async () => {}, remove: async () => {} }
+        },
+        tabs: {
+          query: async () => [
+            { id: 1, url: 'https://www.youtube.com/watch?v=1', title: 'YouTube' }
+          ],
+          onRemoved: { addListener: noop },
+          onUpdated: { addListener: noop }
+        },
+        tabCapture: { getMediaStreamId: async () => 'stream-id' },
+        action: { setBadgeText: async () => {}, setBadgeBackgroundColor: async () => {} },
+        offscreen: {
+          hasDocument: async () => false,
+          createDocument: async () => {},
+          closeDocument: async () => {}
+        }
+      };
+
+      (async () => {
+        const html = await (await fetch('/src/popup.html')).text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        for (const node of Array.from(doc.body.children)) {
+          if (node.tagName === 'SCRIPT') continue;
+          document.body.appendChild(document.importNode(node, true));
+        }
+
+        await import('/src/popup.js');
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        const select = document.getElementById('presetSelect');
+        select.value = 'bassBoost';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const status = document.getElementById('status');
+        status.textContent = 'YouTube · capturando';
+        status.classList.add('on');
+        const capture = document.getElementById('captureBtn');
+        capture.textContent = 'Detener captura';
+        capture.classList.add('stop');
+        document.getElementById('abBtn').classList.remove('active');
+      })();
+    </script>
+  </body>
+</html>

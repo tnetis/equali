@@ -1,0 +1,17 @@
+{
+  "name": "equalizer-pro-extension",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ecualizador de 10 bandas para Chrome (Manifest V3).",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
