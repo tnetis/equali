@@ -8,12 +8,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build and package
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -23,9 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      # Installs whatever the build needs (esbuild ships a prebuilt binary).
+      # esbuild ships a prebuilt binary; no runtime dependencies.
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -58,9 +62,26 @@ jobs:
           path: equalizer-pro-*.zip
           if-no-files-found: error
 
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download zip
+        uses: actions/download-artifact@v4
+        with:
+          name: equalizer-pro-zip
+          path: release
+
+      - name: List files
+        run: ls -l release
+
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: equalizer-pro-*.zip
+          files: release/equalizer-pro-*.zip
           generate_release_notes: true
