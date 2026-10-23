@@ -64,7 +64,7 @@ export const PRESETS = {
   podcast:      { group: 'Voz', name: 'Podcast', gains: [-3, -2, -1, 0, 3, 4, 5, 4, 2, 0], preamp: 2 },
 
   // ------------------------------------------------------------- Especiales
-  smallSpeakers:{ group: 'Especiales', name: 'Altavoces pequeños', gains: [8, 7, 5, 2, 0, -1, -2, -3, -4, -5], preamp: 0 },
+  smallSpeakers:{ group: 'Especiales', name: 'Altavoces pequeños', gains: [-8, -7, -5, -2, 0, 1, 2, 3, 4, 3], preamp: 0 },
   headphones:   { group: 'Especiales', name: 'Auriculares', gains: [3, 2, 1, 0, 0, 1, 2, 3, 4, 5], preamp: 0 },
   car:          { group: 'Especiales', name: 'Coche', gains: [5, 4, 3, 1, 0, 0, 1, 2, 3, 3], preamp: 1 },
   trebleBoost:  { group: 'Especiales', name: 'Refuerzo de agudos', gains: [0, 0, 0, 0, 0, 0, 2, 4, 6, 7], preamp: 0 },
@@ -75,7 +75,8 @@ export const DEFAULT_STATE = {
   enabled: true,
   preamp: 0,
   gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  limiter: true,
+  limiter: false,
+  limiterUserSet: false,
   preset: 'flat',
   customPresets: {}
 };
@@ -121,7 +122,10 @@ export function normalizeSettings(raw) {
   if (!raw || typeof raw !== 'object') return base;
 
   base.enabled = raw.enabled !== false;
-  base.limiter = raw.limiter !== false;
+  // Old versions shipped with the compressor on by default. Only keep it on
+  // when the user has explicitly toggled it since.
+  base.limiterUserSet = raw.limiterUserSet === true;
+  base.limiter = base.limiterUserSet && raw.limiter === true;
   base.preamp = clamp(Number(raw.preamp) || 0, MIN_GAIN, MAX_GAIN);
 
   if (Array.isArray(raw.gains)) {

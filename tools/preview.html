@@ -9,6 +9,12 @@
         width: 392px;
         background: #0e0f11;
       }
+
+      /* Deterministic screenshots: do not capture a transition mid-frame. */
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
     </style>
   </head>
   <body>

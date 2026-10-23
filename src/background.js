@@ -247,7 +247,8 @@ chrome.runtime.onInstalled.addListener(() => {
           enabled: true,
           preamp: 0,
           gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-          limiter: true,
+          limiter: false,
+          limiterUserSet: false,
           preset: 'flat',
           customPresets: {}
         }

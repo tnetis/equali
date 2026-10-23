@@ -704,6 +704,7 @@ els.preamp.addEventListener('change', () => {
 
 els.limiter.addEventListener('change', () => {
   settings.limiter = els.limiter.checked;
+  settings.limiterUserSet = true;
   commit({ history: false });
 });
 
@@ -712,6 +713,8 @@ els.reset.addEventListener('click', () => {
   settings.preamp = 0;
   settings.preset = 'flat';
   settings.enabled = true;
+  settings.limiter = DEFAULT_STATE.limiter;
+  settings.limiterUserSet = DEFAULT_STATE.limiterUserSet;
   rebuildPresets();
   commit({ flush: true });
   toast('Ecualizador restablecido');

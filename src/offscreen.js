@@ -34,16 +34,28 @@ const dbToGain = (db) => Math.pow(10, db / 20);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * tanh curve normalised so |x| <= 1 maps to |y| <= 1. Anything the filters
- * push past full scale lands flat on the curve instead of wrapping around.
+ * Soft clip with unity gain below 0.5 (-6 dBFS) and a smooth knee up to 1.
+ *
+ * The previous tanh curve was normalised by tanh(drive), which gave quiet
+ * signals about +4.8 dB of gain. That made "Plano" louder than the source and
+ * pushed every preset into the limiter, hiding the EQ changes. This curve is
+ * transparent at normal levels and only acts on peaks.
  */
+function softClipSample(x) {
+  const a = Math.abs(x);
+  const sign = x < 0 ? -1 : 1;
+  if (a <= 0.5) return x;
+  if (a >= 1) return sign;
+  const t = (a - 0.5) * 2;
+  // Cubic Hermite: (0.5, 0.5) slope 1 -> (1, 1) slope 0.
+  return sign * 0.5 * (1 + t + t * t - t * t * t);
+}
+
 function makeSoftClipCurve(samples = 2048) {
   const curve = new Float32Array(samples);
-  const drive = 1.6;
-  const norm = Math.tanh(drive);
   for (let i = 0; i < samples; i++) {
     const x = (i * 2) / (samples - 1) - 1;
-    curve[i] = Math.tanh(drive * x) / norm;
+    curve[i] = softClipSample(x);
   }
   return curve;
 }
@@ -112,7 +124,7 @@ async function start(streamId, rawSettings) {
 
   const safety = ctx.createWaveShaper();
   safety.curve = makeSoftClipCurve();
-  safety.oversample = 'none';
+  safety.oversample = '2x';
 
   const master = ctx.createGain();
   const now = ctx.currentTime;

@@ -23,7 +23,7 @@ Manifest V3, sin dependencias en runtime, sin permisos de red y sin telemetría.
 - **39 presets** agrupados: Graves, Música, Cine y juegos, Voz, Especiales
   (Bass Booster Xtreme, Party, Club, Cine, Gaming, Podcast, Lo-fi…).
 - **Preamplificador** ±12 dB y **protección de salida** fija a −1 dBFS (el compresor
-  es opcional; el recorte de seguridad no).
+  está desactivado por defecto; el recorte de seguridad no).
 - **Curva editable**: arrastra los puntos, doble clic para poner una banda a 0,
   flechas del teclado para ajuste fino, `Shift` para imantar al centro.
 - **Espectro en vivo** dibujado detrás de la curva.
@@ -121,13 +121,14 @@ lugar de fallar en silencio.
 
 El nivel de salida está acotado por hardware de audio, no por buena voluntad:
 
-- **Soft-clip siempre activo** (`WaveShaper` tanh): ninguna muestra pasa de 0 dBFS
-  aunque pongas preamp +12 dB y diez bandas a +12 dB.
+- **Soft-clip siempre activo** (`WaveShaper` con saturación suave): ninguna muestra
+  pasa de 0 dBFS aunque pongas preamp +12 dB y diez bandas a +12 dB. Por debajo de
+  −6 dBFS es transparente (ganancia unidad), así que no colorea el sonido normal.
 - **Techo maestro fijo a −1 dBFS** (0.89). No se puede desactivar desde la interfaz.
 - **Rampas de 30 ms** en cada cambio de ganancia y preamp: sin clics.
 - **Fade-in de 250 ms** al activar y **fade-out de 70 ms** al detener: sin golpes
   en los altavoces al empezar o cortar.
-- El compresor (checkbox) es opcional; la protección de arriba, no.
+- El compresor (checkbox) es opcional y viene desactivado; la protección de arriba, no.
 
 Aun así, el sentido común manda: empieza con el volumen del sistema bajo y sube
 desde ahí. La extensión no puede proteger un volumen que ya viene saturado.
