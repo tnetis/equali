@@ -59,6 +59,14 @@ npm run build   # -> dist/ minificado y con la versión sincronizada
 
 Solo se necesita Node 20+. No hay toolchain nativa.
 
+## Pruebas manuales
+
+Con el repo servido en local (`python -m http.server 8771`):
+
+- `tools/harness.html` carga la UI con las APIs de Chrome simuladas.
+- `tools/audio-graph-test.html` usa un `MediaStream` real y comprueba que A/B, el
+  compresor y el medidor no reconstruyen el grafo de audio.
+
 ## GitHub Actions
 
 `.github/workflows/build.yml` se ejecuta en cada push, PR, tag o manualmente:
@@ -136,8 +144,10 @@ desde ahí. La extensión no puede proteger un volumen que ya viene saturado.
 ## Rendimiento
 
 - **0 % de CPU en reposo**: si no hay sonido no se envía ni se pinta nada.
-- El **espectro solo existe con el popup abierto**; al cerrarlo, el analizador sale
-  del grafo de audio (un FFT menos por bloque).
+- El **espectro solo existe con el popup abierto**; al cerrarlo se deja de leer el
+  analizador (no hay FFT), pero el nodo sigue conectado para no cortar el audio.
+- **Grafo fijo**: A/B, encendido y compresor no reconstruyen la cadena; solo cambian
+  ganancias con rampas cortas, sin clics ni cortes.
 - Medidor a **10 fps**, sin asignaciones en el bucle caliente.
 - Movimientos de slider: **1 escritura en disco por gesto** (antes ~11) y mensajes
   agrupados a ~16/s.
@@ -148,6 +158,9 @@ desde ahí. La extensión no puede proteger un volumen que ya viene saturado.
 - Solo **una pestaña a la vez** (restricción de `tabCapture`).
 - No ecualiza aplicaciones nativas de Windows, solo pestañas de Chrome.
 - Audio protegido con DRM (Netflix, algunas radios) puede llegar en silencio.
+- `tabCapture` añade latencia (del orden de 100–200 ms): en vídeo, la imagen puede
+  ir ligeramente por delante del sonido. Es una limitación de la API de Chrome.
+- La salida se reproduce en el dispositivo de audio predeterminado del sistema.
 - Páginas `chrome://`, la Web Store y otras extensiones no se pueden capturar.
 - Al recargar la extensión hay que volver a activar la captura.
 

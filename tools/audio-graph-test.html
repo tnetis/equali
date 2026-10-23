@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Equali audio graph test</title>
+    <style>
+      body { background: #111; color: #eee; font: 13px system-ui; padding: 16px; }
+      button { font: inherit; padding: 8px 14px; }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <!-- Serve the repo root (python -m http.server 8771), open this page and click. -->
+    <button id="run">Run audio graph test</button>
+    <pre id="out">pending</pre>
+    <script type="module">
+      const out = document.getElementById('out');
+      const messages = [];
+      const listeners = [];
+      const graph = { connects: 0, disconnects: 0, compressor: null, targets: [] };
+
+      window.chrome = window.chrome || {};
+      window.chrome.runtime = {
+        onMessage: { addListener: (fn) => listeners.push(fn) },
+        sendMessage: async (message) => {
+          messages.push(message);
+          return { ok: true };
+        }
+      };
+
+      const origConnect = AudioNode.prototype.connect;
+      AudioNode.prototype.connect = function (...args) {
+        graph.connects += 1;
+        return origConnect.apply(this, args);
+      };
+      const origDisconnect = AudioNode.prototype.disconnect;
+      AudioNode.prototype.disconnect = function (...args) {
+        graph.disconnects += 1;
+        return origDisconnect.apply(this, args);
+      };
+      const origCompressor = AudioContext.prototype.createDynamicsCompressor;
+      AudioContext.prototype.createDynamicsCompressor = function () {
+        const node = origCompressor.call(this);
+        graph.compressor = node;
+        return node;
+      };
+      const origTarget = AudioParam.prototype.setTargetAtTime;
+      AudioParam.prototype.setTargetAtTime = function (target, start, timeConstant) {
+        if (graph.compressor) {
+          if (this === graph.compressor.threshold) graph.targets.push(['threshold', target]);
+          if (this === graph.compressor.ratio) graph.targets.push(['ratio', target]);
+        }
+        return origTarget.call(this, target, start, timeConstant);
+      };
+
+      function send(message) {
+        return new Promise((resolve) => {
+          const payload = { ...message, target: 'offscreen' };
+          let settled = false;
+          let asyncExpected = false;
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              resolve(undefined);
+            }
+          }, 3000);
+          for (const fn of listeners) {
+            try {
+              const ret = fn(payload, {}, (response) => {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  resolve(response);
+                }
+              });
+              if (ret === true) asyncExpected = true;
+            } catch (error) {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                resolve({ ok: false, error: String(error) });
+              }
+            }
+          }
+          if (!asyncExpected && !settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(undefined);
+          }
+        });
+      }
+
+      let sourceCtx = null;
+      let sourceStream = null;
+
+      async function ensureSource() {
+        if (sourceCtx) return;
+        sourceCtx = new AudioContext();
+        const osc = sourceCtx.createOscillator();
+        const gain = sourceCtx.createGain();
+        const dest = sourceCtx.createMediaStreamDestination();
+        osc.frequency.value = 1000;
+        gain.gain.value = 0.02;
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start();
+        sourceStream = dest.stream;
+        await sourceCtx.resume();
+      }
+
+      await import('/src/offscreen.js');
+
+      document.getElementById('run').addEventListener('click', async () => {
+        try {
+          await ensureSource();
+          navigator.mediaDevices.getUserMedia = async () => sourceStream;
+
+          const settingsBase = {
+            enabled: true,
+            preamp: 0,
+            gains: [9, 8, 7, 4, 1, 0, 0, 0, 0, 0],
+            limiter: false,
+            limiterUserSet: true,
+            preset: 'bassBoost',
+            customPresets: {}
+          };
+
+          const start = await send({ type: 'START', streamId: 'test-stream', settings: settingsBase });
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          const afterStart = {
+            start,
+            connects: graph.connects,
+            disconnects: graph.disconnects,
+            targets: [...graph.targets]
+          };
+
+          graph.targets = [];
+          await send({
+            type: 'SETTINGS',
+            settings: { ...settingsBase, enabled: false, gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preset: 'flat' }
+          });
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          const afterBypass = {
+            connects: graph.connects,
+            disconnects: graph.disconnects,
+            targets: [...graph.targets]
+          };
+
+          graph.targets = [];
+          await send({
+            type: 'SETTINGS',
+            settings: { ...settingsBase, enabled: true, limiter: true, gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], preset: 'flat' }
+          });
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          const afterLimiter = {
+            connects: graph.connects,
+            disconnects: graph.disconnects,
+            targets: [...graph.targets]
+          };
+
+          await send({ type: 'MONITOR', on: true });
+          await new Promise((resolve) => setTimeout(resolve, 700));
+          const spectra = messages.filter((message) => message.type === 'SPECTRUM').length;
+
+          const stop = await send({ type: 'STOP' });
+          const hasTarget = (targets, name, value) =>
+            targets.some(([targetName, targetValue]) =>
+              targetName === name && Math.abs(targetValue - value) < 1e-6
+            );
+          const graphUnchanged =
+            afterBypass.connects === afterStart.connects &&
+            afterBypass.disconnects === afterStart.disconnects &&
+            afterLimiter.connects === afterStart.connects &&
+            afterLimiter.disconnects === afterStart.disconnects;
+          const ok = Boolean(
+            afterStart.start?.ok &&
+              graphUnchanged &&
+              hasTarget(afterStart.targets, 'threshold', 0) &&
+              hasTarget(afterStart.targets, 'ratio', 1) &&
+              hasTarget(afterBypass.targets, 'threshold', 0) &&
+              hasTarget(afterBypass.targets, 'ratio', 1) &&
+              hasTarget(afterLimiter.targets, 'threshold', -6) &&
+              hasTarget(afterLimiter.targets, 'ratio', 20) &&
+              spectra > 0 &&
+              stop?.ok
+          );
+          const result = { ok, afterStart, afterBypass, afterLimiter, spectra, stop };
+          window.__result = result;
+          out.textContent = `${ok ? 'OK' : 'FAIL'}\n${JSON.stringify(result, null, 2)}`;
+        } catch (error) {
+          window.__result = { error: String(error?.stack || error) };
+          out.textContent = window.__result.error;
+        }
+      });
+    </script>
+  </body>
+</html>

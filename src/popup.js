@@ -724,6 +724,9 @@ els.undoBtn.addEventListener('click', undo);
 els.redoBtn.addEventListener('click', redo);
 
 /* A/B: hold to hear the untouched audio. */
+let closing = false;
+let portRetry = 0;
+
 let abPrevious = null;
 function abStart() {
   if (abPrevious !== null) return;
@@ -748,7 +751,15 @@ els.abBtn.addEventListener('pointerdown', (event) => {
 els.abBtn.addEventListener('pointerup', abEnd);
 els.abBtn.addEventListener('pointerleave', abEnd);
 els.abBtn.addEventListener('pointercancel', abEnd);
+window.addEventListener('pointerup', abEnd);
 window.addEventListener('blur', abEnd);
+window.addEventListener('pagehide', () => {
+  closing = true;
+  abEnd();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) abEnd();
+});
 
 /* --------------------------------------------------------- preset sharing */
 
@@ -844,24 +855,38 @@ function suggestName() {
 /* --------------------------------------------------------------- bootstrap */
 
 function connectPort() {
+  if (closing) return;
+  let port;
   try {
-    const port = chrome.runtime.connect({ name: 'eq-ui' });
-    port.onMessage.addListener((message) => {
-      if (!message || typeof message !== 'object') return;
-      if (message.type === 'SPECTRUM' && Array.isArray(message.bins)) {
-        spectrum = message.bins;
-        lastSpectrum = performance.now();
-        spectrumUntil = lastSpectrum + 900;
-        requestDraw();
-      }
-      if (message.type === 'STATUS') {
-        status = { active: Boolean(message.active), tabId: message.tabId ?? null };
-        renderStatus();
-      }
-    });
+    port = chrome.runtime.connect({ name: 'eq-ui' });
   } catch {
-    /* direct tab (tests) without chrome.runtime */
+    /* direct tab (tests) or extension unloading */
+    return;
   }
+
+  port.onMessage.addListener((message) => {
+    portRetry = 0;
+    if (!message || typeof message !== 'object') return;
+    if (message.type === 'SPECTRUM' && Array.isArray(message.bins)) {
+      spectrum = message.bins;
+      lastSpectrum = performance.now();
+      spectrumUntil = lastSpectrum + 900;
+      requestDraw();
+    }
+    if (message.type === 'STATUS') {
+      status = { active: Boolean(message.active), tabId: message.tabId ?? null };
+      renderStatus();
+    }
+  });
+  port.onDisconnect.addListener(() => {
+    // The service worker can be suspended while the popup stays open. Without
+    // a port the live spectrum stops arriving, so reconnect a few times.
+    if (closing || portRetry >= 5) return;
+    portRetry += 1;
+    setTimeout(() => {
+      if (!closing) connectPort();
+    }, 500);
+  });
 }
 
 async function init() {
@@ -886,6 +911,9 @@ async function init() {
   rebuildPresets();
   render();
   connectPort();
+  // If a previous popup left a transient state behind (for example A/B while
+  // closing), make the live graph match what is stored again.
+  if (status.active) pushSettings(true);
   requestDraw();
 }
 

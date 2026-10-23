@@ -116,9 +116,10 @@ async function start(streamId, rawSettings) {
   // Optional compressor. It shapes the sound; the safety stage below is what
   // actually guarantees the level.
   const limiter = ctx.createDynamicsCompressor();
-  limiter.threshold.value = -6;
+  // Start bypassed; apply() enables it only when the user asked for it.
+  limiter.threshold.value = 0;
   limiter.knee.value = 0;
-  limiter.ratio.value = 20;
+  limiter.ratio.value = 1;
   limiter.attack.value = 0.003;
   limiter.release.value = 0.25;
 
@@ -154,6 +155,10 @@ async function start(streamId, rawSettings) {
 
   for (const track of stream.getAudioTracks()) {
     track.addEventListener('ended', () => {
+      // Ignore tracks from a previous capture: stop() fires 'ended' on them
+      // while a new stream may already be starting, and that must not kill
+      // the new session.
+      if (!audio || audio.stream !== stream) return;
       stop();
       post({ type: 'TRACK_ENDED' });
     });
@@ -204,16 +209,15 @@ async function stop() {
   return { ok: true };
 }
 
-/** Rebuild the node graph only when the topology actually changes. */
+/**
+ * Build the graph once. Toggling the EQ, the compressor or the popup meter
+ * only changes AudioParams/gains, never the topology, so tab audio does not
+ * click or drop when the popup opens/closes or A/B is pressed.
+ */
 function route() {
   if (!audio) return;
-  const { source, preamp, filters, limiter, safety, master, analyser, settings, ctx } = audio;
-  // The analyser is only needed while the popup is watching, so it leaves the
-  // path when the meter is off (saves an FFT per audio block).
-  const wanted = `${settings.enabled ? 'on' : 'off'}:${settings.limiter ? 'lim' : 'raw'}:${
-    monitor ? 'meter' : 'quiet'
-  }`;
-  if (audio.routing === wanted) return;
+  if (audio.routing === 'static') return;
+  const { source, preamp, filters, limiter, safety, master, analyser, ctx } = audio;
 
   try {
     source.disconnect();
@@ -233,23 +237,19 @@ function route() {
     node.connect(filter);
     node = filter;
   }
-  if (settings.enabled && settings.limiter) {
-    node.connect(limiter);
-    node = limiter;
-  }
 
-  // Always: soft clip -> ceiling. This is the ear/speaker protection.
-  node.connect(safety);
+  // The compressor stays in the graph even when bypassed: with ratio 1 and
+  // threshold 0 it is transparent, and we avoid reconnecting the chain.
+  node.connect(limiter);
+  limiter.connect(safety); // always: ear/speaker protection
   safety.connect(master);
 
-  if (monitor) {
-    master.connect(analyser);
-    analyser.connect(ctx.destination);
-  } else {
-    master.connect(ctx.destination);
-  }
+  // The analyser is always connected: it has no audible effect and is only
+  // read while the popup is open, so opening/closing the popup cannot glitch.
+  master.connect(analyser);
+  analyser.connect(ctx.destination);
 
-  audio.routing = wanted;
+  audio.routing = 'static';
 }
 
 function apply(rawSettings) {
@@ -267,6 +267,12 @@ function apply(rawSettings) {
     const value = settings.enabled ? clamp(settings.gains[index], MIN_GAIN, MAX_GAIN) : 0;
     filter.gain.setTargetAtTime(value, now, RAMP);
   });
+
+  // Bypass is ratio 1 / threshold 0: the compressor is then transparent, so
+  // A/B really hears the untouched EQ without rebuilding the graph.
+  const compOn = settings.enabled && settings.limiter;
+  audio.limiter.threshold.setTargetAtTime(compOn ? -6 : 0, now, RAMP);
+  audio.limiter.ratio.setTargetAtTime(compOn ? 20 : 1, now, RAMP);
 
   return { ok: true };
 }
@@ -340,13 +346,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'MONITOR':
       monitor = Boolean(message.on);
-      if (monitor) {
+      if (monitor && audio) {
         startMeter();
       } else {
         stopMeter();
       }
-      // Re-route so the analyser leaves the graph when nobody is looking.
-      route();
       sendResponse({ ok: true });
       return true;
   }

@@ -14,6 +14,9 @@ const uiPorts = new Set();
 /** Tab currently captured, mirrored into storage.session so it survives a SW restart. */
 let activeTabId = null;
 
+/** Invalidates an in-flight START if the capture is stopped meanwhile. */
+let captureEpoch = 0;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function hasOffscreen() {
@@ -70,8 +73,13 @@ async function getStatus() {
   if (!present) {
     if (activeTabId !== null) {
       activeTabId = null;
-      await chrome.storage.session.remove('activeTabId');
+      try {
+        await chrome.storage.session.remove('activeTabId');
+      } catch {
+        /* session storage is best-effort */
+      }
     }
+    await setBadge(false);
     return { active: false, tabId: null };
   }
 
@@ -82,6 +90,7 @@ async function getStatus() {
     activeTabId = typeof stored.activeTabId === 'number' ? stored.activeTabId : null;
   }
 
+  await setBadge(activeTabId !== null);
   return { active: activeTabId !== null, tabId: activeTabId };
 }
 
@@ -93,6 +102,16 @@ async function closeOffscreen() {
   }
 }
 
+async function clearCaptureState() {
+  activeTabId = null;
+  try {
+    await chrome.storage.session.remove('activeTabId');
+  } catch {
+    /* session storage is best-effort */
+  }
+  await setBadge(false);
+}
+
 async function startCapture(tabId, streamId, settings) {
   if (!tabId || !streamId) throw new Error('Faltan datos de la pestaña.');
 
@@ -100,39 +119,67 @@ async function startCapture(tabId, streamId, settings) {
     await stopCapture();
   }
 
+  const epoch = ++captureEpoch;
   await ensureOffscreen();
 
   let result;
   try {
     result = await sendToOffscreen({ type: 'START', streamId, settings });
   } catch (error) {
-    await closeOffscreen();
+    if (epoch === captureEpoch) {
+      await closeOffscreen();
+      await clearCaptureState();
+    }
     throw error;
   }
 
   if (!result?.ok) {
-    // Do not leave an idle offscreen document behind on failure.
-    await closeOffscreen();
+    if (epoch === captureEpoch) {
+      // Do not leave an idle offscreen document behind on failure.
+      await closeOffscreen();
+      await clearCaptureState();
+    }
     throw new Error(result?.error || 'No se pudo iniciar la captura.');
   }
 
+  // The tab may have been closed (or the user pressed Stop) while the
+  // offscreen document was starting. Do not resurrect a dead session.
+  if (epoch !== captureEpoch) {
+    return { ok: false, error: 'La captura se canceló.' };
+  }
+
   activeTabId = tabId;
-  await chrome.storage.session.set({ activeTabId: tabId });
-  if (settings) await chrome.storage.local.set({ eqSettings: settings });
+  try {
+    await chrome.storage.session.set({ activeTabId: tabId });
+  } catch {
+    /* session storage is best-effort */
+  }
   await setBadge(true);
+
+  // The popup's MONITOR message may have been sent before this offscreen
+  // document existed. Turn the meter on now that the audio graph is ready.
+  if (uiPorts.size) {
+    try {
+      await sendToOffscreen({ type: 'MONITOR', on: true }, 3);
+      // The popup may have closed while the message was in flight.
+      if (!uiPorts.size) await sendToOffscreen({ type: 'MONITOR', on: false }, 3);
+    } catch {
+      /* meter is cosmetic */
+    }
+  }
+
   return { ok: true, active: true, tabId };
 }
 
 async function stopCapture() {
+  captureEpoch += 1;
   try {
     await sendToOffscreen({ type: 'STOP' }, 3);
   } catch {
     /* document may already be gone */
   }
   await closeOffscreen();
-  activeTabId = null;
-  await chrome.storage.session.remove('activeTabId');
-  await setBadge(false);
+  await clearCaptureState();
   return { ok: true, active: false, tabId: null };
 }
 
@@ -181,7 +228,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendToOffscreen({ type: 'SETTINGS', settings: message.settings }, 3).catch(() => {});
       }
       sendResponse({ ok: true });
-      return true;
+      return;
 
     // ---- from the offscreen document -------------------------------------
     case 'SPECTRUM': {
@@ -210,7 +257,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'eq-ui') return;
   uiPorts.add(port);
-  sendToOffscreen({ type: 'MONITOR', on: true }, 3).catch(() => {});
+  // If there is no capture yet, do not retry MONITOR for two seconds: the
+  // START path turns the meter on once the offscreen document exists.
+  hasOffscreen().then((present) => {
+    if (present && uiPorts.has(port)) {
+      sendToOffscreen({ type: 'MONITOR', on: true }, 3).catch(() => {});
+    }
+  });
   getStatus().then((status) => {
     try {
       port.postMessage({ type: 'STATUS', ...status });
